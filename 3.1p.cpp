@@ -1,50 +1,35 @@
-const int trigPin = 9;
-const int echoPin = 10;
-const int buzzer = 11;
-const int ledPin = 13;
+// This #include statement was automatically added by the Particle IDE.
+#include <JsonParserGeneratorRK.h>
 
-// defines variables
-long duration;
-int distance;
-int safetyDistance;
+// This #include statement was automatically added by the Particle IDE.
+#include <Grove_Temperature_And_Humidity_Sensor.h>
 
+#define DELAY_TIME 30000 
+#define DHT_PIN D3
+// For recording reaings from sensor
+DHT dht(DHT_PIN);
+
+double temp;
+double hum;
+
+void postEventPayload(double temp, double humidity) {
+    JsonWriterStatic<256> jw;
+    {
+        JsonWriterAutoObject obj(&jw);
+        jw.insertKeyValue("temp", temp);
+        jw.insertKeyValue("hum", hum);
+    }
+    Particle.publish("dht11", jw.getBuffer(), PRIVATE);
+}
 
 void setup() {
-pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-pinMode(echoPin, INPUT); // Sets the echoPin as an Input
-pinMode(buzzer, OUTPUT);
-pinMode(ledPin, OUTPUT);
-Serial.begin(9600); // Starts the serial communication
+    dht.begin();
+    pinMode(DHT_PIN,INPUT);
 }
-
 
 void loop() {
-// Clears the trigPin
-digitalWrite(trigPin, LOW);
-delayMicroseconds(2);
-
-// Sets the trigPin on HIGH state for 10 micro seconds
-digitalWrite(trigPin, HIGH);
-delayMicroseconds(10);
-digitalWrite(trigPin, LOW);
-
-// Reads the echoPin, returns the sound wave travel time in microseconds
-duration = pulseIn(echoPin, HIGH);
-
-// Calculating the distance
-distance= duration*0.034/2;
-
-safetyDistance = distance;
-if (safetyDistance <= 10){
-  digitalWrite(buzzer, HIGH);
-  digitalWrite(ledPin, HIGH);
-}
-else{
-  digitalWrite(buzzer, LOW);
-  digitalWrite(ledPin, LOW);
-}
-
-// Prints the distance on the Serial Monitor
-Serial.print("Distance: ");
-Serial.println(distance);
+    temp = dht.getTempCelcius();
+    hum = dht.getHumidity();
+    postEventPayload(temp, hum);
+    delay(DELAY_TIME);
 }
